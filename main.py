@@ -1,3 +1,6 @@
+# Copyright (c) 2025 ETH Library Zürich
+# Licensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
+
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, Response
 import json
 import os
