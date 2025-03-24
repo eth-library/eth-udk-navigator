@@ -1,0 +1,89 @@
+/* =======================
+   ✅ Navbar Brand (Logo Text)
+   ======================= */
+.navbar-brand {
+    font-weight: bold;
+    color: #215CAF !important; /* Blue Brand */
+}
+
+/* =======================
+   ✅ Navbar Links Default + Hover + Active
+   ======================= */
+.navbar-nav .nav-link {
+    color: #215CAF !important; /* Blue color for all nav links */
+}
+
+.navbar-nav .nav-link:hover {
+    color: #184b91 !important; /* Darker blue on hover */
+    opacity: 0.9;
+}
+
+.navbar-nav .nav-link.active {
+    font-weight: bold;
+    color: #215CAF !important; /* Active link should also be blue */
+}
+
+/* Optional: Remove underline */
+.navbar-nav .nav-link, 
+.navbar-nav .nav-link:hover, 
+.navbar-nav .nav-link.active {
+    text-decoration: none !important;
+}
+
+/* =======================
+   ✅ Optional: Navbar Hover Shadow (subtle effect)
+   ======================= */
+.navbar {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    --bs-navbar-padding-x: 0;
+    --bs-navbar-padding-y: 0rem;
+}
+
+/* =======================
+   ✅ Mobile Nav Enhancements (Broader Range)
+   ======================= */
+@media (max-width: 992px) {
+  .navbar-brand {
+    font-size: 1.4rem; /* Larger brand text */
+  }
+
+  .navbar-toggler {
+    padding: 0.6rem 1rem;
+    font-size: 2.6rem;
+  }
+
+  .navbar-nav .nav-link {
+    font-size: 1.8rem;
+    padding-left: 1.2rem;
+    padding-top: 0.6rem;
+    padding-bottom: 0.6rem;
+  }
+}
+
+/* ✅ login button */
+.login-btn {
+    color: #215CAF;
+    text-decoration: none;
+    padding: 1px 3px;
+    border: 1px solid #215CAF;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    margin-left: 4px;
+    margin-top: 10px;
+    display: inline-flex
+;
+    white-space: nowrap;
+    align-items: center;
+}
+
+.login-btn:hover {
+    background-color: #215CAF;
+    color: white;
+    text-decoration: none;
+}
+
+.navbar-brand-text {
+  position: relative;
+  top: 4px; /* adjust as needed: 2px–5px usually works well */
+}
+

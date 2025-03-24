@@ -1,0 +1,261 @@
+/* =======================
+   ✅ Overall Page Layout
+   ======================= */
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+/* =======================
+   ✅ Graph Container Fills Remaining Space
+   ======================= */
+#graph-network {
+    width: 100%;
+    height: 100%; /* Let flexbox calculate */
+    min-height: 300px; /* Prevent too small */
+    background-color: white;
+    border: 1px solid lightgray;
+    position: relative; /* ✅ Important for absolute positioning inside */
+}
+
+/* =======================
+   ✅ Top Bar Styling
+   ======================= */
+.bg-light {
+    z-index: 10;
+    position: relative;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* =======================
+   ✅ Responsive Handling
+   ======================= */
+#graph-top-bar {
+    flex-wrap: wrap; /* Allows wrapping on small screens */
+    gap: 8px; /* Adds some spacing between elements when wrapped */
+}
+
+/* Limit dropdown width and prevent overflow */
+#graph-root-selector {
+    max-width: 250px; /* Adjust as needed */
+    min-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* Ensure search input can shrink but not disappear */
+#graph-search-input {
+    min-width: 180px;
+}
+
+/* Ensure button stays visible and compact */
+#fullscreen-btn {
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* =======================
+   ✅ Fullscreen Adjustments
+   ======================= */
+
+/* Graph in fullscreen */
+:fullscreen #graph-network {
+    width: 100vw;
+    height: 100vh;
+}
+:-webkit-full-screen #graph-network { /* Safari */
+    width: 100vw;
+    height: 100vh;
+}
+
+/* Hide top bar in fullscreen */
+:fullscreen #graph-top-bar {
+    display: none;
+}
+:-webkit-full-screen #graph-top-bar {
+    display: none;
+}
+
+/* =======================
+   ✅ Search & Dropdown Styling
+   ======================= */
+#graph-search-results .list-group-item {
+    cursor: pointer;
+}
+
+#graph-search-results .list-group-item:hover {
+    background-color: #f8f9fa;
+}
+
+/* ✅ Increase search dropdown height */
+#graph-search-results {
+    width: 100%;
+    z-index: 1000;
+    max-height: calc(100vh - 200px); /* Dynamic based on screen size */
+    overflow-y: auto;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    position: absolute;
+}
+
+/* ✅ Section headers inside search results */
+#graph-search-results .list-group-item.fw-bold {
+    background-color: #f1f1f1;
+    cursor: default;
+    color: #333;
+}
+
+/* ✅ Optional: make Top Picks pop out slightly */
+#graph-search-results .list-group-item.fw-bold:first-child {
+    border-bottom: 1px solid #ccc;
+}
+
+
+.graph-clickable {
+    cursor: pointer;
+}
+
+/* =======================
+   ✅ Tooltip Fix
+   ======================= */
+.vis-tooltip {
+    font-size: 10px !important;
+    white-space: nowrap !important;
+    padding: 4px 6px !important;
+    line-height: 1.3em !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    max-width: none !important;
+    min-width: 50px !important;
+}
+
+/* =======================
+   ✅ Mobile Adjustment (Optional)
+   ======================= */
+@media (max-width: 576px) {
+    #graph-root-selector {
+        max-width: 100%; /* Full width on extra small screens */
+    }
+
+    #fullscreen-btn {
+        width: 100%; /* Optional: Full width button on mobile */
+    }
+
+    #graph-search-input {
+        width: 100%; /* Full width search on mobile */
+    }
+}
+
+/* =======================
+   ✅ Minimal Icon Button (Fullscreen)
+   ======================= */
+.btn-icon {
+    background: none;
+    border: none;
+    padding: 4px 6px;
+    font-size: 1.2rem; /* Slightly larger icon */
+    cursor: pointer;
+    color: #555; /* Soft color */
+}
+
+.btn-icon:hover {
+    color: #000; /* Darker on hover */
+    opacity: 0.8;
+}
+
+.btn-icon:focus {
+    outline: none;
+    box-shadow: none;
+}
+
+/* Ensure no weird spacing */
+.btn-icon:active {
+    outline: none;
+    box-shadow: none;
+}
+
+/* Optional: fixed width/height if needed
+.btn-icon {
+    width: 32px;
+    height: 32px;
+}
+*/
+
+/* ✅ Legend inline in navbar */
+#graph-legend {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    white-space: nowrap;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 0.75rem; /* Smaller text */
+}
+
+.legend-color {
+    width: 14px;
+    height: 14px;
+    border: 1px solid black;
+    display: inline-block;
+    border-radius: 3px;
+}
+
+.legend-label {
+    font-size: 0.75rem;
+    color: #333;
+}
+
+/* Optional: On very small screens, allow wrapping */
+@media (max-width: 768px) {
+    #graph-legend {
+        margin-top: 5px;
+    }
+}
+
+/* ✅ Fullscreen centered spinner container */
+#graph-loading {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%; /* Cover full width */
+    height: 100%; /* Cover full height */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.9); /* Light background overlay */
+    z-index: 1000; /* On top of everything */
+    flex-direction: column;
+    text-align: center;
+    padding: 1rem;
+    box-sizing: border-box;
+    font-size: 1.1rem;
+    color: #555;
+}
+
+/* ✅ Spinner animation */
+.graph-spinner .spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid rgba(0, 0, 0, 0.1);
+    border-top-color: #215CAF; /* Your theme blue */
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 12px;
+}
+
+/* ✅ Spin keyframe */
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+body {
+  font-family: "DINPro", helvetica, arial, sans-serif;
+}

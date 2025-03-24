@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ETH-UDK Vector Query</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="/static/nav.css" rel="stylesheet">
+  <link href="/static/styles.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/nouislider@15.7.0/dist/nouislider.min.css" rel="stylesheet">
+</head>
+<body class="d-flex flex-column min-vh-100">
+  <!-- ✅ Navigation Menu -->
+  {% include '_navbar.html' %}
+
+<div class="container py-4">
+  <h2 class="mb-4">ETH-UDK Vector Query
+  <button class="btn btn-sm eth-udk-btn ms-2" data-bs-toggle="modal" data-bs-target="#helpModal" title="What does the Vector Query do?">
+    HELP
+  </button></h2>
+  <form method="POST">
+    <input type="hidden" name="language" id="language-input" value="{{ form_data.language or 'eng' }}">
+
+    <div class="mb-3">
+      <label for="title" class="form-label">Title</label>
+      <input type="text" class="form-control" id="title" name="title" required value="{{ form_data.title or '' }}">
+    </div>
+    <div class="mb-3">
+      <label for="abstract" class="form-label">Abstract</label>
+      <textarea class="form-control" id="abstract" name="abstract" rows="3">{{ form_data.abstract or '' }}</textarea>
+    </div>
+    <div class="mb-3">
+      <label for="toc" class="form-label">Table of Contents</label>
+      <textarea class="form-control" id="toc" name="toc" rows="3">{{ form_data.toc or '' }}</textarea>
+    </div>
+    <div class="mb-3">
+      <label for="namespace" class="form-label">Namespace</label>
+      <select class="form-select" name="namespace">
+        <option value="descriptor-variant" {% if form_data.namespace == 'descriptor-variant' %}selected{% endif %}>descriptor-variant</option>
+        <option value="descriptor-variant-broader" {% if form_data.namespace == 'descriptor-variant-broader' %}selected{% endif %}>descriptor-variant-broader</option>
+      </select>
+    </div>
+
+    <!-- Level Range Slider -->
+    <div class="mb-3">
+      <label for="level-slider" class="form-label">Select Level Range:</label>
+      <div id="level-slider"></div>
+      <input type="hidden" id="level_min" name="level_min" value="{{ form_data.level_min }}">
+      <input type="hidden" id="level_max" name="level_max" value="{{ form_data.level_max }}">
+      <div class="small text-muted mt-2">Levels from <span id="level-min-label">{{ form_data.level_min }}</span> to <span id="level-max-label">{{ form_data.level_max }}</span></div>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Search</button>
+    <!-- ✅ Spinner for Vector Query -->
+    <div id="query-loading" class="graph-spinner" style="display:none;">
+      <div class="spinner"></div>
+      <p>Processing your query...</p>
+    </div>
+
+  </form>
+  <div class="mb-3 d-flex justify-content-end align-items-center">
+    <label for="lang-select" class="me-2 mb-0">Language:</label>
+    <select id="lang-select" class="form-select form-select-sm" style="width: auto;">
+      <option value="eng" {% if form_data.language == 'eng' %}selected{% endif %}>English</option>
+      <option value="ger" {% if form_data.language == 'ger' %}selected{% endif %}>German</option>
+    </select>
+
+  </div>
+
+  {% if results %}
+    <hr class="my-4">
+    <h4>Top Results</h4>
+  <ol class="list-group list-group-numbered">
+    {% for item in results %}
+      <li class="list-group-item {% if loop.index0 % 2 == 0 %}bg-light{% endif %}">
+        <div class="d-flex justify-content-between align-items-center">
+          <h5 class="mb-1 result-title" data-eng="{{ item.metadata.descriptor_eng }}" data-ger="{{ item.metadata.descriptor_ger }}">
+            {{ item.metadata.descriptor_eng }}
+          </h5>
+          <button class="btn btn-sm btn-outline-secondary toggle-details">More</button>
+        </div>
+        <p class="mb-1 small text-muted">
+          <strong>Score:</strong> {{ "%.4f"|format(item.score) }} |
+          <strong>ID:</strong> {{ item.id }} |
+          <strong>Level:</strong> {{ item.metadata.level }}
+        </p>
+        <div class="details mt-2" style="display:none;">
+          <strong>UDC:</strong> {{ item.metadata.udc }}<br>
+          <strong>EN:</strong> {{ item.metadata.descriptor_eng }}<br>
+          <strong>DE:</strong> {{ item.metadata.descriptor_ger }}<br>
+          <strong>FR:</strong> {{ item.metadata.descriptor_fre }}<br>
+          <strong>Variants EN:</strong> {{ item.metadata.variants_eng }}<br>
+          <strong>Variants DE:</strong> {{ item.metadata.variants_ger }}<br>
+          <strong>Variants FR:</strong> {{ item.metadata.variants_fre }}<br>
+          <strong>Broader Terms:</strong> {{ item.metadata.broader_terms_names }}
+        </div>
+      </li>
+    {% endfor %}
+  </ol>
+
+
+  <script>
+    // Toggle more/less
+    document.querySelectorAll('.toggle-details').forEach(button => {
+      button.addEventListener('click', function () {
+        const details = this.closest('li').querySelector('.details');
+        const isVisible = details.style.display === 'block';
+        details.style.display = isVisible ? 'none' : 'block';
+        this.textContent = isVisible ? 'More' : 'Less';
+      });
+    });
+
+    // Language switcher logic
+    const langSelect = document.getElementById('lang-select');
+    const langInput = document.getElementById('language-input');
+
+    langSelect.addEventListener('change', function () {
+      const selectedLang = this.value;
+      langInput.value = selectedLang; // Keep in form
+      document.querySelectorAll('.result-title').forEach(titleEl => {
+        titleEl.textContent = titleEl.dataset[selectedLang];
+      });
+    });
+
+    // Trigger update on initial load so correct title language is shown
+    window.addEventListener('DOMContentLoaded', function () {
+      const selectedLang = langInput.value;
+      document.querySelectorAll('.result-title').forEach(titleEl => {
+        titleEl.textContent = titleEl.dataset[selectedLang];
+      });
+    });
+  </script>
+
+  {% endif %}
+
+
+</div>
+
+<!-- JS Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/nouislider@15.7.0/dist/nouislider.min.js"></script>
+<script>
+  const slider = document.getElementById('level-slider');
+  const minInput = document.getElementById('level_min');
+  const maxInput = document.getElementById('level_max');
+  const minLabel = document.getElementById('level-min-label');
+  const maxLabel = document.getElementById('level-max-label');
+
+  const startMin = parseFloat(minInput.value || '0.0');
+  const startMax = parseFloat(maxInput.value || '22.0');
+
+  noUiSlider.create(slider, {
+      start: [startMin, startMax],
+      connect: true,
+      step: 1,
+      range: {
+          'min': 0,
+          'max': 22
+      },
+      pips: {
+          mode: 'steps',
+          stepped: true,
+          density: 4, // adjust spacing between labels
+          format: {
+              to: value => `${parseInt(value)}`,   // 👈 only whole numbers shown
+              from: value => parseFloat(value)
+          }
+      }
+  });
+
+
+  slider.noUiSlider.on('update', (values) => {
+    minInput.value = values[0];
+    maxInput.value = values[1];
+    minLabel.textContent = parseInt(values[0]);
+    maxLabel.textContent = parseInt(values[1]);
+  });
+</script>
+<script>
+  document.querySelector("form").addEventListener("submit", function () {
+    document.getElementById("query-loading").style.display = "block";
+  });
+</script>
+        <!-- 🔍 Help Modal with Language Switch -->
+        <div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true">
+          <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="helpModalLabel">ETH-UDK Vector Query – Help</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <!-- Language Switch -->
+                <div class="text-end mb-3">
+                  <button class="btn btn-outline-primary btn-sm" onclick="switchHelpLanguage('en')">English</button>
+                  <button class="btn btn-outline-primary btn-sm" onclick="switchHelpLanguage('de')">Deutsch</button>
+                </div>
+
+                <!-- English Help -->
+                <div id="help-en">
+                  <h6>What does the ETH-UDK Vector Query do?</h6>
+                  <p>
+                    The ETH-UDK Vector Query is an AI-powered discovery tool that helps you find subject terms from the ETH-UDK classification that semantically match the content you provide.
+                    You can enter a title, abstract, and/or table of contents. Instead of performing a traditional keyword search, the system uses semantic vector search – meaning it compares the underlying meaning of the text rather than exact words.
+                  </p>
+                  <h6>What happens behind the scenes?</h6>
+                  <ul>
+                    <li><strong>Text input is analyzed:</strong> Your inputs are combined into one continuous text.</li>
+                    <li><strong>Embedding creation:</strong> The text is transformed into a vector using OpenAI's GPT-4 embedding model. This vector is a mathematical representation of the meaning of your input.</li>
+                    <li><strong>Semantic search:</strong> This vector is compared against vectors in a Pinecone database containing ETH-UDK classification terms.</li>
+                    <li><strong>Classification depth filter:</strong> You can limit which classification levels (e.g., 5.0 to 9.0) are included in the results.</li>
+                    <li><strong>Ranked results:</strong> You receive a sorted list of the most semantically similar classification terms with metadata like ID, level, UDC notation, variants, and broader terms.</li>
+                  </ul>
+                  <h6>Key Notes</h6>
+                  <ul>
+                    <li>The system is language-agnostic: it finds matches regardless of the language used in your input or the classification term.</li>
+                    <li>Results are based on meaning, not keyword occurrence.</li>
+                    <li>The AI has no prior knowledge of the ETH-UDK – it simply compares meaning using mathematical similarity.</li>
+                  </ul>
+                  <h6>Experimental Tool</h6>
+                  <p>
+                    This tool represents an initial prototype for performing semantic queries on the ETH-UDK classification.
+                    It is intended as a foundation for the future development of more powerful, tailored, and automated workflows using agentic AI methods.
+                    Such workflows could integrate specific rules, constraints, and context-sensitive logic relevant to subject indexing — enabling more accurate, scalable, and standards-compliant classification processes through Large Language Models and intelligent agents.
+                  </p>
+                </div>
+
+                <!-- German Help -->
+                <div id="help-de" style="display: none;">
+                  <h6>Was macht die ETH-UDK Vector Query?</h6>
+                  <p>
+                    Die ETH-UDK Vector Query ist ein KI-gestütztes Werkzeug, das dir dabei hilft, Begriffe aus der ETH-UDK-Klassifikation zu finden, die thematisch zu einem von dir eingegebenen Text passen.
+                    Du gibst dafür beispielsweise einen Titel, ein Abstract und/oder ein Inhaltsverzeichnis ein. Basierend auf diesen Angaben durchsucht das System die Klassifikation nicht mehr mit klassischen Stichwort-Suchverfahren, sondern mithilfe sogenannter semantischer Vektorsuche. Das bedeutet: Die Inhalte werden nicht nur wörtlich, sondern inhaltlich verstanden und verglichen.
+                  </p>
+                  <h6>Was passiert im Hintergrund?</h6>
+                  <ul>
+                    <li><strong>Texteingabe analysieren:</strong> Deine Eingaben werden zu einem Fliesstext kombiniert.</li>
+                    <li><strong>Erstellung eines semantischen Vektors:</strong> Dieser Text wird mittels eines Sprachmodells von OpenAI in einen Vektor überführt – eine mathematische Repräsentation der Bedeutung.</li>
+                    <li><strong>Semantische Suche:</strong> Dieser Vektor wird in einer Pinecone-Datenbank mit vorbereiteten ETH-UDK-Vektoren verglichen.</li>
+                    <li><strong>Filterung nach Klassifikationstiefe:</strong> Du kannst definieren, welche Level (z. B. 5 bis 9) in die Suche einbezogen werden.</li>
+                    <li><strong>Rangierte Ergebnisliste:</strong> Das System zeigt die inhaltlich ähnlichsten Begriffe mit Metadaten wie ID, Level, UDK, Varianten und übergeordneten Begriffen.</li>
+                  </ul>
+                  <h6>Gut zu wissen</h6>
+                  <ul>
+                    <li>Die Suche ist sprachübergreifend: Die Spracheingabe spielt keine Rolle für das Ergebnis.</li>
+                    <li>Die Reihenfolge basiert auf semantischer Ähnlichkeit – nicht auf Keywords.</li>
+                    <li>Die KI kennt die ETH-UDK nicht – sie vergleicht rein auf Basis mathematischer Ähnlichkeit.</li>
+                  </ul>
+                  <h6>Experimentelles Werkzeug</h6>
+                  <p>
+                    Dieses Werkzeug stellt eine erste Version für die semantische Abfrage der ETH-UDK-Klassifikation dar.
+                    Es dient als Grundlage für die zukünftige Entwicklung weiterführender, spezialisierter und automatisierter Workflows auf Basis von Agentic AI.
+                    Solche Workflows können spezifische Regeln, Vorgaben und kontextabhängige Logiken der Sacherschliessung berücksichtigen – und ermöglichen so genauere, skalierbare und normgerechte Erschliessungsprozesse mithilfe von grossen Sprachmodellen (LLMs) und intelligenten Agenten.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <script>
+          function switchHelpLanguage(lang) {
+            document.getElementById("help-en").style.display = lang === "en" ? "block" : "none";
+            document.getElementById("help-de").style.display = lang === "de" ? "block" : "none";
+          }
+        </script>
+  {% include '_footer.html' %}
+</body>
+</html>
