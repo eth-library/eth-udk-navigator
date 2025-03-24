@@ -28,8 +28,11 @@ This tool uses OpenAI embeddings and Pinecone vector search to find terms that b
 
 ## 🤖 Getting Started (for Developers)
 
+> 🧪 This project is also Replit-compatible. You can run it directly in Replit by forking this repo.
+
+
 ### ♻️ Prerequisites
-- Python 3.9+
+- Python 3.11+
 - `pip`
 - Git
 
