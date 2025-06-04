@@ -233,7 +233,13 @@ video {
   border-radius: 10px;
   text-align: center;
   box-shadow: 0 0 10px rgba(0,0,0,0.2);
+
+  /* ✅ neu */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
+
 
 .graph-spinner .spinner {
   border: 4px solid #f3f3f3;
@@ -284,4 +290,23 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: bold;
   letter-spacing: 0.5px;
   color: #212529; /* ETH blue */
+}
+
+.blurred {
+  filter: blur(3px);
+  pointer-events: none;
+  user-select: none;
+}
+
+#cover-container {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+#cover-thumbnail {
+  max-width: 80px;
+  height: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
 }

@@ -9,6 +9,11 @@ from pinecone import Pinecone
 import openai
 from flask_cors import CORS
 from dotenv import load_dotenv
+import requests
+# import fitz  # type: ignore  # 👈 optional, für TypeChecker
+# print(f"✅ Using fitz from: {fitz.__file__}")
+from io import BytesIO
+from bs4 import BeautifulSoup
 
 load_dotenv()  # Load variables from .env into environment
 
@@ -229,6 +234,11 @@ def vector_query():
         form_data["level_min"] = request.form.get("level_min", "0.0")
         form_data["level_max"] = request.form.get("level_max", "22.0")
         form_data["language"] = request.form.get("language", "eng")
+        form_data["mmsid"] = request.form.get("mmsid", "").strip()
+        form_data["subjects"] = request.form.getlist("subjects")
+        form_data["contenttext"] = request.form.get("contenttext", "").strip()
+
+
 
         # Convert range to selected level strings
         try:
@@ -238,7 +248,8 @@ def vector_query():
         except ValueError:
             selected_levels = level_options
 
-        query_text = f"{form_data['title']} {form_data['abstract']} {form_data['toc']}".strip()
+        query_text = f"{form_data['title']} {form_data['abstract']} {form_data['toc']} {form_data['contenttext']}".strip()
+
 
         if query_text:
             # Create embedding
@@ -257,11 +268,78 @@ def vector_query():
             )
             results = pinecone_result.matches
 
-    print(f"✅ Pinecone returned {len(results)} matches.")
-    for match in results:
-        print(f"{match.id} - Score: {match.score}")
+    if request.method == "POST":
+        print(f"✅ Pinecone returned {len(results)} matches.")
+        for match in results:
+            print(f"{match.id} - Score: {match.score}")
 
     return render_template("vector_query.html", form_data=form_data, level_options=level_options, results=results)
+
+@app.route("/taxonomy-graph")
+def taxonomy_graph():
+    return render_template("taxonomy_graph.html")
+
+@app.route("/extract-abstract", methods=["POST"])
+def extract_abstract():
+    try:
+        data = request.get_json()
+        url = data.get("url")
+        if not url or not url.startswith("https://deposit.dnb.de/"):
+            return jsonify({"error": "Invalid URL"}), 400
+
+        headers = {
+            "User-Agent": "Mozilla/5.0"
+        }
+        res = requests.get(url, headers=headers, timeout=10)
+
+        if res.status_code != 200:
+            return jsonify({"error": "Failed to fetch HTML"}), 500
+
+        soup = BeautifulSoup(res.text, "html.parser")
+        text = soup.get_text(separator=" ", strip=True)
+        return jsonify({"text": text[:3000]})
+
+    except Exception as e:
+        print("❌ Abstract extraction error:", e)
+        return jsonify({"error": "Internal server error"}), 500
+
+
+@app.route("/extract-pdf", methods=["POST"])
+def extract_pdf():
+    try:
+        import fitz  # 👈 Local import – verhindert Replit-Dependency-Scanner
+
+        data = request.get_json()
+        url = data.get("url")
+        if not url or not url.lower().endswith(".pdf"):
+            return jsonify({"error": "Invalid or missing PDF URL"}), 400
+
+        # PDF herunterladen
+        response = requests.get(url)
+        if response.status_code != 200:
+            return jsonify({"error": "Failed to download PDF"}), 500
+
+        # PDF öffnen aus Bytes
+        pdf_data = BytesIO(response.content)
+        doc = fitz.open(stream=pdf_data, filetype="pdf")
+
+        # Text extrahieren (optional: auf die ersten N Seiten beschränken)
+        full_text = ""
+        max_pages = min(len(doc), 10)
+
+        for page_num in range(max_pages):
+            page = doc.load_page(page_num)
+            full_text += page.get_text()
+
+        doc.close()
+
+        return jsonify({"text": full_text.strip()})
+
+    except Exception as e:
+        print("❌ PDF Extraction Error:", str(e))
+        return jsonify({"error": "Internal server error"}), 500
+
+
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
