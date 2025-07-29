@@ -1,0 +1,173 @@
+<!--
+  Copyright (c) 2025 ETH Library Zürich
+  Licensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ETH Auto Classification Workflow Eval</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="/static/nav.css" rel="stylesheet">
+  <link href="/static/styles.css" rel="stylesheet">
+</head>
+<body class="d-flex flex-column min-vh-100">
+
+  <!-- Navigation -->
+  {% include '_navbar.html' %}
+
+  <!-- Main Content -->
+  <div class="container py-4">
+    <h2 class="mb-4">
+      Auto Classification Workflow Eval
+      <button class="btn btn-sm eth-udk-btn ms-2" data-bs-toggle="modal" data-bs-target="#helpModal" title="What does Auto Classification Workflow Eval do?">
+        HELP
+      </button>
+    </h2>
+
+    <!-- Classification Form -->
+    <form id="auto-class-form">
+      <div class="mb-3">
+        <label for="title" class="form-label">Title</label>
+        <input type="text" class="form-control" id="title" name="title" required>
+      </div>
+      <div class="mb-3">
+        <label for="abstract" class="form-label">Abstract</label>
+        <textarea class="form-control" id="abstract" name="abstract" rows="3"></textarea>
+      </div>
+      <div class="mb-3">
+        <label for="toc" class="form-label">Table of Contents</label>
+        <textarea class="form-control" id="toc" name="toc" rows="3"></textarea>
+      </div>
+      <!-- Workflow Method Dropdown -->
+      <div class="mb-3">
+        <label for="workflow-path" class="form-label">Workflow Method</label>
+        <select class="form-select" id="workflow-path" name="workflow-path" required>
+          <option value="1">1) Direct embedding of all text parts</option>
+          <option value="2">2) Embedding of all text parts with prior data pre-processing and cleaning</option>
+          <option value="3">3) Generic keywords in an embedding</option>
+          <option value="4">4) Generic keywords with separate embeddings</option>
+          <option value="5">5) Classification Agent with subset of UDK keywords in prompt</option>
+          <option value="5">6) Classification Agent with Reranking after Vector-Query</option>
+          <option value="5">7) Classification Agent with Quality Assurance Agent</option>
+        </select>
+      </div>
+
+      <!-- Vector Index Namespace Dropdown -->
+      <div class="mb-3">
+        <label for="index-namespace" class="form-label">Vector-Index Namespace</label>
+        <select class="form-select" id="index-namespace" name="index-namespace" required>
+          <option value="descriptor_e">descriptor_e</option>
+          <option value="descriptor-variant">descriptor-variant</option>
+          <option value="descriptor-variant-broader">descriptor-variant-broader</option>
+        </select>
+      </div>
+      
+      <!-- Number of Results -->
+      <div class="mb-3">
+        <label for="top-k" class="form-label">Number of Results</label>
+        <input type="number" class="form-control" id="top-k" name="top-k" value="25" min="1" max="100">
+      </div>
+      
+      <!-- Language Switch -->
+      <div class="form-check form-switch mb-3">
+        <input class="form-check-input" type="checkbox" role="switch" id="lang-switch" name="lang-switch">
+        <label class="form-check-label" for="lang-switch">Deutsch (DE)</label>
+      </div>
+
+      <button type="submit" class="btn btn-primary">Send to n8n</button>
+    </form>
+
+    <!-- Classification Results -->
+    <div id="classification-results" class="mt-4 d-none">
+      <hr class="my-4">
+      <h4>Top Results</h4>
+      <ol class="list-group list-group-numbered" id="results-list"></ol>
+    </div>
+    
+    <!-- JSON Response Output -->
+    <div id="json-response" class="mt-4 d-none">
+      <h4>Response</h4>
+      <pre class="bg-light p-3 border rounded" id="json-output"></pre>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script>
+    document.getElementById("auto-class-form").addEventListener("submit", async function (e) {
+      e.preventDefault();
+
+      const data = [{
+        "workflow-path": document.getElementById("workflow-path").value,
+        "index-namespace": document.getElementById("index-namespace").value,
+        "title": document.getElementById("title").value,
+        "tableOfContents": document.getElementById("toc").value,
+        "abstract": document.getElementById("abstract").value,
+        "top_k": parseInt(document.getElementById("top-k").value, 10) || 25
+      }];
+
+      const responseBox = document.getElementById("classification-results");
+      const resultsList = document.getElementById("results-list");
+      resultsList.innerHTML = ''; // clear old results
+
+      try {
+        const res = await fetch("/auto-classification", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        });
+
+        const json = await res.json();
+        const items = json[0].merged;
+
+        // Sprachumschalter EINMAL vor der Schleife lesen
+        const langSwitch = document.getElementById("lang-switch").checked;
+        const descriptorField = langSwitch ? "descriptor_ger" : "descriptor_eng";
+
+        
+        items.forEach((item, index) => {
+          const li = document.createElement("li");
+          li.className = `list-group-item ${index % 2 === 0 ? 'bg-light' : ''}`;
+          li.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center">
+              <h5 class="mb-1">${item[descriptorField]}</h5>
+              <button class="btn btn-sm btn-outline-secondary toggle-details" style="display: none;">More</button>
+            </div>
+            <p class="mb-1 small text-muted">
+              <strong>Score:</strong> ${item.score.toFixed(4)} |
+              <strong>Sys:</strong> ${item.sys} |
+              <strong>Level:</strong> ${item.level}
+            </p>
+            <div class="details mt-2" style="display:none;">
+              <strong>UDC:</strong> ${item.udc}<br>
+              <strong>EN:</strong> ${item.descriptor_eng}<br>
+              <strong>DE:</strong> ${item.descriptor_ger}
+            </div>
+          `;
+          resultsList.appendChild(li);
+        });
+
+        // Enable toggles
+        document.querySelectorAll(".toggle-details").forEach(btn => {
+          btn.addEventListener("click", function () {
+            const details = this.parentElement.nextElementSibling;
+            details.style.display = details.style.display === "none" ? "block" : "none";
+          });
+        });
+
+        responseBox.classList.remove("d-none");
+
+      } catch (err) {
+        resultsList.innerHTML = `<li class="list-group-item text-danger">Error: ${err}</li>`;
+        responseBox.classList.remove("d-none");
+      }
+    });
+
+  </script>
+
+
+
+  {% include '_footer.html' %}
+</body>
+</html>

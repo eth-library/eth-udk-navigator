@@ -339,6 +339,25 @@ def extract_pdf():
         print("❌ PDF Extraction Error:", str(e))
         return jsonify({"error": "Internal server error"}), 500
 
+@app.route("/auto-classification", methods=["GET", "POST"])
+def auto_classification():
+    if request.method == "GET":
+        return render_template("auto-classification.html")
+    else:
+        try:
+            data = request.get_json()
+            # 👉 hier deinen n8n Webhook-URL einsetzen
+            webhook_url = os.environ.get("N8N_WEBHOOK_URL")
+            api_key = os.environ.get("N8N_WEBHOOK_API_KEY")
+            headers = {
+                "Content-Type": "application/json",
+                "apikey": api_key  # 👈 genau hier der entscheidende Header
+            }
+            response = requests.post(webhook_url, json=data, headers=headers)
+            response.raise_for_status()
+            return jsonify(response.json())
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
 
 
 if __name__ == "__main__":
