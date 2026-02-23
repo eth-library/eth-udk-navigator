@@ -84,7 +84,7 @@ async function loadFocusedGraph(sysId) {
         const baseColor = colorByCategory(node.color);
         nodes.add({
             id: node.id,
-            label: `${node.label} (${node.id})`,
+            label: `${node.label} (${node.id}) - ${node.root_term}/${node.category_label}`,
             title: node.title,
             color: {
                 background: baseColor.background,

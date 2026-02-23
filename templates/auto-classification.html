@@ -44,13 +44,11 @@
       <div class="mb-3">
         <label for="workflow-path" class="form-label">Workflow Method</label>
         <select class="form-select" id="workflow-path" name="workflow-path" required>
-          <option value="1">1) Direct embedding of all text parts</option>
-          <option value="2">2) Embedding of all text parts with prior data pre-processing and cleaning</option>
-          <option value="3">3) Generic keywords in an embedding</option>
-          <option value="4">4) Generic keywords with separate embeddings</option>
-          <option value="5">5) Classification Agent with subset of UDK keywords in prompt</option>
-          <option value="5">6) Classification Agent with Reranking after Vector-Query</option>
-          <option value="5">7) Classification Agent with Quality Assurance Agent</option>
+          <option value="1">1) Direkte Embedding-Suche (Baseline)</option>
+          <option value="2">2) Vorverarbeitung + Embedding-Suche (Text-Prep-Agent)</option>
+          <option value="3">3) Generische Zwischen-Keywords → gemeinsame Embedding-Suche</option>
+          <option value="4">4) Generische Zwischen-Keywords → getrennte Embedding-Suchen (pro Keyword)</option>
+          <option value="5">5) Retrieval mit Feinsortierung (Cohere ReRanking)</option>
         </select>
       </div>
 

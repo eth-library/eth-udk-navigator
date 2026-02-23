@@ -18,7 +18,9 @@ from bs4 import BeautifulSoup
 load_dotenv()  # Load variables from .env into environment
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("FLASK_SECRET_KEY", "default-secret")  # Used for session encryption (set securely in Replit secrets)
+app.secret_key = os.environ.get(
+    "FLASK_SECRET_KEY", "default-secret"
+)  # Used for session encryption (set securely in Replit secrets)
 CORS(app)  # Enable CORS for all routes
 
 # --- Load ETH-UDK Data from JSON ---
@@ -32,14 +34,18 @@ with open(DATA_FILE, "r", encoding="utf-8") as f:
 # Convert list of records into dict for quick lookup by 'sys' ID
 data_dict = {item["sys"]: item for item in data}
 
+
 # --- Session-based Login Decorator ---
 def login_required(f):
+
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not session.get("logged_in"):
             return redirect(url_for("login", next=request.url))
         return f(*args, **kwargs)
+
     return decorated_function
+
 
 # --- Login View ---
 @app.route("/login", methods=["GET", "POST"])
@@ -55,6 +61,7 @@ def login():
             flash("Incorrect password.", "danger")
     return render_template("login.html")
 
+
 # --- Logout View ---
 @app.route("/logout")
 def logout():
@@ -62,28 +69,35 @@ def logout():
     flash("You have been logged out.", "info")
     return redirect(url_for("login"))
 
+
 # --- Main Page Routes ---
 @app.route("/")
 def index():
     return render_template("home.html")
 
+
 @app.route("/explorer")
 def explorer():
     return render_template("index.html")
+
 
 @app.route("/graph")
 def graph_page():
     return render_template("graph.html")
 
+
 # --- Data API Endpoints ---
 @app.route("/roots")
 def get_root_objects():
-    root_objects = [
-        {"sys": obj["sys"], "descriptor_eng": obj["descriptor_eng"], "descriptor_ger": obj["descriptor_ger"]}
-        for obj in data_dict.values() if not obj.get("broader_terms")
-    ]
-    root_objects = sorted(root_objects, key=lambda x: x['descriptor_eng'].lower())
+    root_objects = [{
+        "sys": obj["sys"],
+        "descriptor_eng": obj["descriptor_eng"],
+        "descriptor_ger": obj["descriptor_ger"]
+    } for obj in data_dict.values() if not obj.get("broader_terms")]
+    root_objects = sorted(root_objects,
+                          key=lambda x: x['descriptor_eng'].lower())
     return jsonify(root_objects)
+
 
 @app.route("/object/<int:sys_id>")
 def get_object(sys_id):
@@ -94,28 +108,35 @@ def get_object(sys_id):
     response = dict(obj)
 
     # Resolve related concept links
-    broader_terms_resolved = [
-        {"sys": bt, "name": data_dict[bt]["descriptor_eng"]}
-        for bt in obj.get("broader_terms", []) if bt in data_dict
-    ]
-    narrower_terms_resolved = [
-        {"sys": nt, "name": data_dict[nt]["descriptor_eng"]}
-        for nt in obj.get("narrower_terms", []) if nt in data_dict
-    ]
+    broader_terms_resolved = [{
+        "sys": bt,
+        "name": data_dict[bt]["descriptor_eng"]
+    } for bt in obj.get("broader_terms", []) if bt in data_dict]
+    narrower_terms_resolved = [{
+        "sys": nt,
+        "name": data_dict[nt]["descriptor_eng"]
+    } for nt in obj.get("narrower_terms", []) if nt in data_dict]
     related_terms_raw = obj.get("related_terms", "")
     related_terms_resolved = []
     if related_terms_raw:
-        related_terms_ids = [int(rt.strip()) for rt in related_terms_raw.split(",") if rt.strip().isdigit()]
-        related_terms_resolved = [
-            {"sys": rt, "name": data_dict[rt]["descriptor_eng"]}
-            for rt in related_terms_ids if rt in data_dict
+        related_terms_ids = [
+            int(rt.strip()) for rt in related_terms_raw.split(",")
+            if rt.strip().isdigit()
         ]
+        related_terms_resolved = [{
+            "sys": rt,
+            "name": data_dict[rt]["descriptor_eng"]
+        } for rt in related_terms_ids if rt in data_dict]
 
-    response["broader_terms_resolved"] = sorted(broader_terms_resolved, key=lambda x: x['name'].lower())
-    response["narrower_terms_resolved"] = sorted(narrower_terms_resolved, key=lambda x: x['name'].lower())
-    response["related_terms_resolved"] = sorted(related_terms_resolved, key=lambda x: x['name'].lower())
+    response["broader_terms_resolved"] = sorted(
+        broader_terms_resolved, key=lambda x: x['name'].lower())
+    response["narrower_terms_resolved"] = sorted(
+        narrower_terms_resolved, key=lambda x: x['name'].lower())
+    response["related_terms_resolved"] = sorted(
+        related_terms_resolved, key=lambda x: x['name'].lower())
 
     return jsonify(response)
+
 
 # --- Search Endpoint (used for Explorer page) ---
 @app.route("/search")
@@ -141,24 +162,47 @@ def search_objects():
     all_results_sorted = sorted(all_results, key=lambda x: x['descriptor_eng'])
 
     # Prioritized top picks
-    exact_matches = [item for item in all_results if item["descriptor_eng"].lower() == query]
-    start_single_word_matches = [item for item in all_results if item not in exact_matches and item["descriptor_eng"].lower().startswith(query) and len(item["descriptor_eng"].split()) == 1]
-    start_two_word_matches = [item for item in all_results if item not in exact_matches and item not in start_single_word_matches and item["descriptor_eng"].lower().startswith(query) and len(item["descriptor_eng"].split()) == 2]
-    short_word_matches = [item for item in all_results if item not in exact_matches and item not in start_single_word_matches and item not in start_two_word_matches and len(item["descriptor_eng"].split()) <= 2]
+    exact_matches = [
+        item for item in all_results if item["descriptor_eng"].lower() == query
+    ]
+    start_single_word_matches = [
+        item for item in all_results
+        if item not in exact_matches and item["descriptor_eng"].lower().
+        startswith(query) and len(item["descriptor_eng"].split()) == 1
+    ]
+    start_two_word_matches = [
+        item for item in all_results
+        if item not in exact_matches and item not in start_single_word_matches
+        and item["descriptor_eng"].lower().startswith(query)
+        and len(item["descriptor_eng"].split()) == 2
+    ]
+    short_word_matches = [
+        item for item in all_results
+        if item not in exact_matches and item not in start_single_word_matches
+        and item not in start_two_word_matches
+        and len(item["descriptor_eng"].split()) <= 2
+    ]
 
-    top_picks = (exact_matches + start_single_word_matches + start_two_word_matches + short_word_matches)[:5]
+    top_picks = (exact_matches + start_single_word_matches +
+                 start_two_word_matches + short_word_matches)[:5]
 
-    return jsonify({"top_picks": top_picks, "other_results": all_results_sorted})
+    return jsonify({
+        "top_picks": top_picks,
+        "other_results": all_results_sorted
+    })
+
 
 # --- Graph Data Endpoints ---
 @app.route("/graph-roots")
 def graph_roots():
-    root_objects = [
-        {"sys": obj["sys"], "descriptor_eng": obj["descriptor_eng"]}
-        for obj in data_dict.values() if not obj.get("broader_terms")
-    ]
-    root_objects = sorted(root_objects, key=lambda x: x['descriptor_eng'].lower())
+    root_objects = [{
+        "sys": obj["sys"],
+        "descriptor_eng": obj["descriptor_eng"]
+    } for obj in data_dict.values() if not obj.get("broader_terms")]
+    root_objects = sorted(root_objects,
+                          key=lambda x: x['descriptor_eng'].lower())
     return jsonify(root_objects)
+
 
 @app.route("/graph-focused")
 def graph_focused():
@@ -173,7 +217,14 @@ def graph_focused():
             f"Level: {obj.get('level', '')}\nSYS: {sys}\nUDC: {obj.get('udc', '')}\n"
             f"Variants EN: {obj.get('variants_eng', '')}\nVariants DE: {obj.get('variants_ger', '')}\nVariants FR: {obj.get('variants_fre', '')}"
         )
-        return {"id": sys, "label": obj["descriptor_eng"], "color": color, "title": tooltip}
+        return {
+            "id": sys,
+            "label": obj["descriptor_eng"],
+            "color": color,
+            "title": tooltip,
+            "root_term": obj.get("root_term", ""),
+            "category_label": obj.get("category_label", "")
+        }
 
     obj = data_dict[sys_id]
     nodes = [create_node(obj, "orange")]
@@ -197,6 +248,7 @@ def graph_focused():
                 edges.append({"from": sys_id, "to": rt_int})
 
     return jsonify({"nodes": nodes, "edges": edges})
+
 
 # --- Vector Query Page (Protected with login) ---
 @app.route("/vector-query", methods=["GET", "POST"])
@@ -230,15 +282,14 @@ def vector_query():
         form_data["title"] = request.form.get("title", "").strip()
         form_data["abstract"] = request.form.get("abstract", "").strip()
         form_data["toc"] = request.form.get("toc", "").strip()
-        form_data["namespace"] = request.form.get("namespace", "descriptor-variant")
+        form_data["namespace"] = request.form.get("namespace",
+                                                  "descriptor-variant")
         form_data["level_min"] = request.form.get("level_min", "0.0")
         form_data["level_max"] = request.form.get("level_max", "22.0")
         form_data["language"] = request.form.get("language", "eng")
         form_data["mmsid"] = request.form.get("mmsid", "").strip()
         form_data["subjects"] = request.form.getlist("subjects")
         form_data["contenttext"] = request.form.get("contenttext", "").strip()
-
-
 
         # Convert range to selected level strings
         try:
@@ -248,15 +299,14 @@ def vector_query():
         except ValueError:
             selected_levels = level_options
 
-        query_text = f"{form_data['title']} {form_data['abstract']} {form_data['toc']} {form_data['contenttext']}".strip()
-
+        query_text = f"{form_data['title']} {form_data['abstract']} {form_data['toc']} {form_data['contenttext']}".strip(
+        )
 
         if query_text:
             # Create embedding
             embedding = client.embeddings.create(
                 input=query_text,
-                model="text-embedding-3-large"
-            ).data[0].embedding
+                model="text-embedding-3-large").data[0].embedding
 
             # Query Pinecone with metadata filter
             pinecone_result = index.query(
@@ -264,8 +314,9 @@ def vector_query():
                 namespace=form_data["namespace"],
                 top_k=50,
                 include_metadata=True,
-                filter={"level": {"$in": selected_levels}}
-            )
+                filter={"level": {
+                    "$in": selected_levels
+                }})
             results = pinecone_result.matches
 
     if request.method == "POST":
@@ -273,11 +324,16 @@ def vector_query():
         for match in results:
             print(f"{match.id} - Score: {match.score}")
 
-    return render_template("vector_query.html", form_data=form_data, level_options=level_options, results=results)
+    return render_template("vector_query.html",
+                           form_data=form_data,
+                           level_options=level_options,
+                           results=results)
+
 
 @app.route("/taxonomy-graph")
 def taxonomy_graph():
     return render_template("taxonomy_graph.html")
+
 
 @app.route("/extract-abstract", methods=["POST"])
 def extract_abstract():
@@ -287,9 +343,7 @@ def extract_abstract():
         if not url or not url.startswith("https://deposit.dnb.de/"):
             return jsonify({"error": "Invalid URL"}), 400
 
-        headers = {
-            "User-Agent": "Mozilla/5.0"
-        }
+        headers = {"User-Agent": "Mozilla/5.0"}
         res = requests.get(url, headers=headers, timeout=10)
 
         if res.status_code != 200:
@@ -339,7 +393,9 @@ def extract_pdf():
         print("❌ PDF Extraction Error:", str(e))
         return jsonify({"error": "Internal server error"}), 500
 
+
 @app.route("/auto-classification", methods=["GET", "POST"])
+@login_required
 def auto_classification():
     if request.method == "GET":
         return render_template("auto-classification.html")
