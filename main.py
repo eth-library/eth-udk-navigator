@@ -119,10 +119,13 @@ def get_object(sys_id):
     related_terms_raw = obj.get("related_terms", "")
     related_terms_resolved = []
     if related_terms_raw:
-        related_terms_ids = [
-            int(rt.strip()) for rt in related_terms_raw.split(",")
-            if rt.strip().isdigit()
-        ]
+        if isinstance(related_terms_raw, list):
+            related_terms_ids = [int(rt) for rt in related_terms_raw if str(rt).strip().isdigit()]
+        else:
+            related_terms_ids = [
+                int(rt.strip()) for rt in related_terms_raw.split(",")
+                if rt.strip().isdigit()
+            ]
         related_terms_resolved = [{
             "sys": rt,
             "name": data_dict[rt]["descriptor_eng"]
@@ -240,9 +243,14 @@ def graph_focused():
             nodes.append(create_node(data_dict[nt], "blue"))
             edges.append({"from": sys_id, "to": nt})
 
-    for rt in obj.get("related_terms", "").split(","):
-        if rt.strip().isdigit():
-            rt_int = int(rt.strip())
+    related_terms_raw = obj.get("related_terms", "")
+    if isinstance(related_terms_raw, list):
+        related_terms_iter = [str(rt) for rt in related_terms_raw]
+    else:
+        related_terms_iter = related_terms_raw.split(",")
+    for rt in related_terms_iter:
+        if str(rt).strip().isdigit():
+            rt_int = int(str(rt).strip())
             if rt_int in data_dict:
                 nodes.append(create_node(data_dict[rt_int], "red"))
                 edges.append({"from": sys_id, "to": rt_int})
