@@ -37,6 +37,9 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     network = new vis.Network(container, networkData, options);
 
+    // Initialize filters
+    await loadGraphFilterOptions();
+
     // Load root objects
     await loadGraphRootObjects();
 
@@ -123,9 +126,49 @@ function colorByCategory(category) {
     return colors[category] || { background: '#d0e6ff', border: '#0d6efd' };
 }
 
+// Load filter options
+async function loadGraphFilterOptions() {
+    const response = await fetch('/graph-filter-options');
+    const data = await response.json();
+
+    const rootTermSelect = document.getElementById('graph-root-term-filter');
+    const categorySelect = document.getElementById('graph-category-label-filter');
+
+    data.root_terms.forEach(term => {
+        const option = document.createElement('option');
+        option.value = term;
+        option.textContent = term.charAt(0).toUpperCase() + term.slice(1);
+        rootTermSelect.appendChild(option);
+    });
+
+    data.category_labels.forEach(label => {
+        const option = document.createElement('option');
+        option.value = label;
+        option.textContent = label.charAt(0).toUpperCase() + label.slice(1);
+        categorySelect.appendChild(option);
+    });
+
+    const onFilterChange = async () => {
+        document.getElementById('graph-search-input').value = '';
+        document.getElementById('graph-search-results').innerHTML = '';
+        await loadGraphRootObjects();
+    };
+
+    rootTermSelect.addEventListener('change', onFilterChange);
+    categorySelect.addEventListener('change', onFilterChange);
+}
+
 // Load roots for dropdown
 async function loadGraphRootObjects() {
-    const response = await fetch('/graph-roots');
+    const rootTerm = document.getElementById('graph-root-term-filter').value;
+    const categoryLabel = document.getElementById('graph-category-label-filter').value;
+    
+    const params = new URLSearchParams({
+        root_term: rootTerm,
+        category_label: categoryLabel
+    });
+
+    const response = await fetch(`/graph-roots?${params.toString()}`);
     const rootObjects = await response.json();
 
     const rootSelect = document.getElementById('graph-root-selector');
@@ -139,21 +182,29 @@ async function loadGraphRootObjects() {
     });
 
     // Load graph when selected
-    rootSelect.addEventListener('change', function () {
+    rootSelect.onchange = function () {
         const selectedSys = this.value;
         if (selectedSys) {
             loadFocusedGraph(selectedSys);
         }
-    });
+    };
 }
 
-// ✅ Updated search with Top Picks and All Results
 async function searchGraphObjects(query) {
     const resultsList = document.getElementById('graph-search-results');
     resultsList.innerHTML = '';
     if (query.length < 3) return;
 
-    const response = await fetch(`/search?q=${encodeURIComponent(query)}`);
+    const rootTerm = document.getElementById('graph-root-term-filter').value;
+    const categoryLabel = document.getElementById('graph-category-label-filter').value;
+    
+    const params = new URLSearchParams({
+        q: query,
+        root_term: rootTerm,
+        category_label: categoryLabel
+    });
+
+    const response = await fetch(`/search?${params.toString()}`);
     const resultObj = await response.json();
 
     const { top_picks, other_results } = resultObj;

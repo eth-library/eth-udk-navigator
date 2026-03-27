@@ -27,6 +27,13 @@
     <div class="container-fluid d-flex flex-column h-100 p-0">
       <!-- Top bar with dropdown, search, legend, fullscreen -->
       <div class="p-3 bg-light d-flex justify-content-between align-items-center flex-wrap" id="graph-top-bar">
+          <!-- Filters -->
+          <select id="graph-root-term-filter" class="form-select w-auto me-2 mb-2 mb-lg-0">
+              <option value="">All Root Terms</option>
+          </select>
+          <select id="graph-category-label-filter" class="form-select w-auto me-2 mb-2 mb-lg-0">
+              <option value="">All Category Labels</option>
+          </select>
           <!-- Root Selector -->
           <select id="graph-root-selector" class="form-select w-auto me-2 mb-2 mb-lg-0"></select>
 

@@ -142,14 +142,25 @@ def get_object(sys_id):
 
 
 # --- Search Endpoint (used for Explorer page) ---
+def _match_filters(obj, rt_filter, cl_filter):
+    if rt_filter and obj.get("root_term") != rt_filter:
+        return False
+    if cl_filter and obj.get("category_label") != cl_filter:
+        return False
+    return True
+
 @app.route("/search")
 def search_objects():
     query = request.args.get('q', '').strip().lower()
+    root_term = request.args.get('root_term', '')
+    category_label = request.args.get('category_label', '')
     if not query:
         return jsonify({"top_picks": [], "other_results": []})
 
     all_results = []
     for obj in data_dict.values():
+        if not _match_filters(obj, root_term, category_label):
+            continue
         descriptors = [
             obj.get('descriptor_eng', '').lower(),
             obj.get('descriptor_ger', '').lower(),
@@ -196,12 +207,20 @@ def search_objects():
 
 
 # --- Graph Data Endpoints ---
+@app.route("/graph-filter-options")
+def graph_filter_options():
+    root_terms = sorted(list(set(obj.get("root_term") for obj in data_dict.values() if obj.get("root_term"))))
+    category_labels = sorted(list(set(obj.get("category_label") for obj in data_dict.values() if obj.get("category_label"))))
+    return jsonify({"root_terms": root_terms, "category_labels": category_labels})
+
 @app.route("/graph-roots")
 def graph_roots():
+    root_term = request.args.get("root_term", "")
+    category_label = request.args.get("category_label", "")
     root_objects = [{
         "sys": obj["sys"],
         "descriptor_eng": obj["descriptor_eng"]
-    } for obj in data_dict.values() if not obj.get("broader_terms")]
+    } for obj in data_dict.values() if not obj.get("broader_terms") and _match_filters(obj, root_term, category_label)]
     root_objects = sorted(root_objects,
                           key=lambda x: x['descriptor_eng'].lower())
     return jsonify(root_objects)
