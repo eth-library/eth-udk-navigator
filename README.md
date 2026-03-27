@@ -1,130 +1,117 @@
-# ETH-UDK Navigator
+# ETH-UDK Navigator - Technical Documentation
 
-**ETH-UDK Navigator** is an AI-powered web application developed by the [ETH Library](https://library.ethz.ch) to support subject indexing and discovery using the ETH Zurich adaptation of the Universal Decimal Classification (UDC).
+## 1. Introduction
+The **ETH-UDK Navigator** is a web-based application designed to explore, search, and visualize the ETH-UDK Subject Classification System. 
 
-The application combines classical classification data with modern AI tools, allowing users to explore subject hierarchies, interactively visualize semantic relationships, and search classification terms using natural language via semantic vector search.
+It provides users with:
+- **Graph Explorer**: An interactive, physics-based network visualization (using `vis.js`) to explore the hierarchical structure (Broader, Narrower, Related terms) of the classification data with active filtering.
+- **Search & List Explorer**: A dynamic search interface that queries a massive 55MB underlying JSON data dictionary (`data.json`) instantly.
+- **Vector Search Query**: A protected endpoint that uses OpenAI (`text-embedding-3-large`) embeddings to query a Pinecone Vector Database for semantic classification searches.
+- **Auto-Classification & Extraction**: API endpoints to scrape website abstracts (`BeautifulSoup`) and parse PDFs (`PyMuPDF/fitz`), sending the text payload directly to an integrated `n8n` webhook for automated metadata handling.
 
----
-
-## 📚 What You Can Do with ETH-UDK Navigator
-
-### 1. **Explore the Classification**
-Use the **Explorer** view to browse top-level classification terms and drill down into narrower or related concepts.
-
-### 2. **Visualize Relationships**
-Use the **Graph** view to display an interactive graph of broader, narrower, and related terms. This helps understand the semantic structure of a concept within ETH-UDK.
-
-### 3. **Semantic Search with Vector Query**
-Use the **Vector Query** tool (requires login) to:
-- Paste in a **title**, **abstract**, or **table of contents** from a document
-- Select a classification **namespace** and **level range**
-- Submit the form to see the **most semantically relevant ETH-UDK terms**
-
-This tool uses OpenAI embeddings and Pinecone vector search to find terms that best match the meaning of your input.
-
-> ⚠️ The vector query functionality is experimental and will serve as a foundation for future AI-based workflows for subject indexing.
+The app uses **Python 3.11+** with **Flask** on the backend, and is deployed entirely on Google Cloud Run via a static `Dockerfile`.
 
 ---
 
-## 🤖 Getting Started (for Developers)
+## 2. Setup and Installation (Windows Environment)
 
-> 🧪 This project is also Replit-compatible. You can run it directly in Replit by forking this repo.
+### Prerequisites
+1. **Python 3.11+**: Download from python.org and ensure Python is added to your Windows PATH.
+2. **Git Bash for Windows**: Highly recommended for running `.sh` deployment scripts natively.
+3. **Google Cloud CLI (`gcloud`)**: Download the Windows installer from [Google Cloud's SDK page](https://cloud.google.com/sdk/docs/install#windows) and install it.
 
+### Local Initialization
+1. Clone or download the repository to your Windows machine and open a terminal inside the project directory:
+   ```bash
+   cd path/to/eth-udk-navigator
+   ```
 
-### ♻️ Prerequisites
-- Python 3.11+
-- `pip`
-- Git
+2. Create a virtual environment to isolate the Python packages:
+   ```bash
+   python -m venv .venv
+   ```
 
-### ⬆️ Clone the Repository
+3. Activate the virtual environment (on Windows):
+   ```cmd
+   .\.venv\Scripts\activate
+   ```
+   *(If using Git Bash, use `source .venv/Scripts/activate`)*
+
+4. Install all production dependencies specified in the project requirements:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+### Google Cloud Authentication Setup
+Because you will be deploying to Google Cloud Run, verify your identity locally via the Cloud CLI:
 ```bash
-git clone https://github.com/your-username/eth-udk-navigator.git
-cd eth-udk-navigator
+# Log in to your Google Account
+gcloud auth login
+
+# Set the active project strictly to your deployment project
+gcloud config set project ethbib-lumina
 ```
 
-### 👤 Create Virtual Environment
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+---
+
+## 3. Configuration Options (`.env`)
+
+The application expects its security configuration and API keys to be provided securely as environment variables. 
+Create a file named **`.env`** in the root directory (this file is ignored from git by default) and fill it with your credentials:
+
+```ini
+# --- OpenAI & Pinecone (Vector Search) ---
+OPENAI_API_KEY=sk-proj-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+PINECONE_API_KEY=pcsk_xxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# --- Application Security ---
+# Password to access the protected /vector-query route
+VECTOR_QUERY_PASSWORD=your-secure-password
+# Cryptographic key for securing Flask user sessions
+SESSION_SECRET=your-random-generated-secret-key-==
+
+# --- External Webhooks ---
+# n8n endpoint target for auto-classification tasks
+N8N_WEBHOOK_URL=https://your-n8n-instance.com/webhook/endpoint
+# Authenticates requests arriving at your n8n target
+N8N_WEBHOOK_API_KEY=your-n8n-api-key
 ```
 
-### ⚙️ Install Dependencies
-```bash
-pip install -r requirements.txt
-```
+> **Warning:** Never commit your `.env` file to GitHub or any public source control. Keep it local.
 
-### ⚡ Set up Environment Variables
-1. Copy the template:
-```bash
-cp .env.example .env
-```
-2. Fill in your `.env` file with the correct secrets:
-```
-FLASK_SECRET_KEY=your-generated-secret-key
-VECTOR_QUERY_PASSWORD=your-password
-PINECONE_API_KEY=your-pinecone-key
-OPENAI_API_KEY=your-openai-key
-```
+---
 
-> To generate a secure `FLASK_SECRET_KEY`:
-```bash
-python -c "import secrets; print(secrets.token_hex(32))"
-```
+## 4. Running on the Local Server
 
-### 🚀 Run the Application
+During development, the easiest way to test changes instantly is to run the built-in Flask Werkzeug server. 
+With your virtual environment activated and your `.env` file created, simply run:
+
 ```bash
 python main.py
 ```
-The app will be accessible at: [http://localhost:5000](http://localhost:5000)
+* **What this does:** Python will dynamically read the local `.env` keys, map to port `8080`, and start the app.
+* **Accessing the App:** Open your browser and navigate to exactly: `http://localhost:8080/`
+* **Stopping:** Press `CTRL + C` in the terminal to kill the local server.
 
 ---
 
-## 💡 Project Structure
-```
-eth-udk-navigator/
-├── templates/              # HTML templates (Jinja2)
-│   ├── home.html
-│   ├── index.html
-│   ├── graph.html
-│   ├── vector_query.html
-│   ├── login.html
-│   ├── _footer.html
-│   └── _navbar.html
-├── static/                 # Static files (CSS, JS)
-│   ├── styles.css
-│   ├── nav.css
-├── data.json               # ETH-UDK classification data
-├── main.py                 # Flask app
-├── requirements.txt        # Python dependencies
-├── .env.example            # Environment variable template
-└── README.md               # This file
+## 5. Deploying to Google Cloud Run
+
+To safely bridge the gap between a Windows environment and a Linux Cloud Run server without running into carriage-return (`\r\n`) bugs, the project utilizes an explicitly defined `Dockerfile`. 
+
+Deployment is simplified through the included `deploy.sh` file, which securely dynamically parses your local `.env` file and pushes the variables to Google Cloud *during* orchestration.
+
+### Deployment Command
+Using **Git Bash for Windows**, execute the following command from the root directory:
+
+```bash
+./deploy.sh
 ```
 
----
+### What the deploy script does behind the scenes:
+1. **Dynamic Secret Loading**: Parses your local `.env` and mathematically constructs a comma-separated format without any invisible `\r` Windows line-breaks.
+2. **Build Execution**: Instructs Google Cloud Build to compile a pristine Linux container strictly according to the `Dockerfile`.
+3. **Execution Configuration**: Google Cloud Run provisions the container with 2048Mi memory (required to securely map the 55MB JSON dataset into memory) and 1 CPU. 
+4. **Booting**: Inside the container, `gunicorn` spins up the application tightly bonded to the dynamic `$PORT` provided by Cloud Run, running exactly 1 worker and 8 threads. 
 
-## 🚪 Authentication for Vector Query
-The Vector Query page is protected via password login. Users must enter a password defined in the environment variable `VECTOR_QUERY_PASSWORD`. Sessions are managed securely via Flask sessions.
-
----
-
-## 🚀 Modifying the Project
-- Update the `data.json` file if you want to load a different classification structure.
-- To change the model or vector search logic, look into the `vector_query` route in `main.py`.
-- Semantic embeddings are created using OpenAI's `text-embedding-3-large` model. You may adapt this if you use a different provider or model.
-- The app uses Pinecone for vector search. You can swap this out for another provider or a local vector DB (e.g. `faiss`) with some adjustments.
-
----
-
-## 📄 License
-This project is licensed under the **Apache License 2.0**. See the [`LICENSE`](LICENSE) file for details.
-
----
-
-## 🤝 Credits
-Created and maintained by the ETH Library team, part of the **AI Library Automation** initiative.
-
-Questions? Feedback? Contact us at: [api@library.ethz.ch](mailto:api@library.ethz.ch)
-
----
-
-Happy hacking ✨
+Once the terminal outputs `Done!`, it will provide the live Production URL (e.g., `https://eth-udk-navigator-...run.app`).
